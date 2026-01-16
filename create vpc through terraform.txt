@@ -1,44 +1,62 @@
+main.tf
 #vpc
-resource "aws_vpc" "like" {
-  cidr_block       = "10.0.0.0/16"
-
-  tags = {
-    Name = "like-vpc"
+resource "aws_vpc" "my_jnj_vpc"{
+ cidr_block =  "10.0.0.0/16"
+  tags ={
+    Name = "my-jnj-vpc"
   }
 }
 #subnet
-resource "aws_subnet" "like" {
-  vpc_id     = aws_vpc.like.id
-  cidr_block = "10.0.1.0/24"
-
-  tags = {
-    Name = "sub-ok"
-  }
+resource "aws_subnet" "my_jnj_pub_subnet"{
+  vpc_id = aws_vpc.my_jnj_vpc.id
+   cidr_block = "10.0.0.0/20"
+   availability_zone = data.aws_availability_zones.available.names[0]   #This is so importent
+   map_public_ip_on_launch = true
+   tags ={
+     Name = "my-jnj-pub-subnet"
+   }
 }
 #rout
-resource "aws_route_table" "like" {
-  vpc_id = aws_vpc.like.id
- 
-
-  route =  {
+resource "aws_route_table" "my_jnj_pub_rt"{
+  vpc_id = aws_vpc.my_jnj_vpc.id
+  route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
+    gateway_id = aws_internet_gateway.my_jnj_igw.id
   }
-
-  tags = {
-    Name = "rt-sh"
+  tags ={
+    Name = "my-jnj-pub-rt"
   }
 }
-#subnet acc
-resource "aws_route_table_association" "sub-ko" {
-  subnet_id      = aws_subnet.like.id
-  route_table_id = aws_route_table.like.id
+#subnet associat
+resource "aws_route_table_association" "my_jnj_rt_sub_ass"{
+    subnet_id = aws_subnet.my_jnj_pub_subnet.id
+    route_table_id = aws_route_table.my_jnj_pub_rt.id
 }
 #igw
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.like.id 
-
+resource "aws_internet_gateway" "my_jnj_igw"{
+  vpc_id = aws_vpc.my_jnj_vpc.id
   tags = {
-    Name = "main-igw"
+    Name = "my-jnj-igw"
   }
+}
+
+-------------------------------------------------------------------------
+provider.tf
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+provider "aws" {
+  region = "ap-northeast-1"
+}
+------------------------------------------------------------------------------
+data.tf
+
+data "aws_availability_zones" "available" {
+  state = "available"
 }
